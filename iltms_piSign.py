@@ -18,54 +18,84 @@
 # This project was created by Bob Clagett of I Like To Make Stuff
 # More details and build video available at http://www.iliketomakestuff.com/
 
-import Image
-import ImageDraw
-import time
-import os
-from rgbmatrix import Adafruit_RGBmatrix
+from flask import Flask, request
+from waitress import serve
 
-import RPi.GPIO as GPIO
-
-imagePath = '/home/pi/rpi-rgb-led-matrix-master/'
-pressed = 0
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BCM)
-
-# on/off button
-GPIO.setup(3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-leds = {
-    18: 14,
-    24: 15,
-    8: 25,
-    7: 19
-}
-
-for button, led in leds.items():
-    GPIO.setup(led, GPIO.OUT)  # led
-    GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # button
-
-# Rows and chain length are both required parameters:
-matrix = Adafruit_RGBmatrix(32, 1)
-matrix.SetWriteCycles(4)
-# Bitmap example w/graphics prims
-image = Image.new("1", (32, 32))  # Can be larger than matrix if wanted!!
+app = Flask(__name__)
 
 
-def showReady():
-    lp = 0
-    # runs a simple animation with the buttons LEDS so you know it's ready.
-    while lp < 5:
-        for led in leds.values():
-            GPIO.output(led, True)
-            time.sleep(.15)
-            GPIO.output(led, False)
-        lp += 1
-    image = Image.open(imagePath + "logo.jpg")
-    image.load()
-    matrix.SetImage(image.im.id, 0, 1)
-    time.sleep(2)
-    matrix.Clear()
+@app.route("/api/sleep")
+def myendpoint():
+    print("Going to sleep")
+    return "Going to sleep"
+
+
+@app.route("/api/meeting")
+def myendpoint():
+    return "Set to meeting"
+
+
+@app.route("/api/recording")
+def myendpoint():
+    return "Set to recording"
+
+
+@app.route("/api/restart")
+def myendpoint():
+    return "Going to restart"
+
+
+@app.route("/api/off")
+def myendpoint():
+    return "Truning off"
+
+
+serve(app, host="0.0.0.0", port=5000, threads=1)  # WAITRESS!
+
+# from PIL import Image
+# from PIL import ImageDraw
+# import time
+# import os
+# from flask import Flask
+# from rgbmatrix import Adafruit_RGBmatrix
+
+# import RPi.GPIO as GPIO
+
+# imagePath = "/home/pi/rpi-rgb-led-matrix-master/"
+# pressed = 0
+# GPIO.setwarnings(False)
+# GPIO.setmode(GPIO.BCM)
+
+# # on/off button
+# GPIO.setup(3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# leds = {18: 14, 24: 15, 8: 25, 7: 19}
+
+# for button, led in leds.items():
+#     GPIO.setup(led, GPIO.OUT)  # led
+#     GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # button
+
+# # Rows and chain length are both required parameters:
+# matrix = Adafruit_RGBmatrix(32, 1)
+# matrix.SetWriteCycles(4)
+# # Bitmap example w/graphics prims
+# image = Image.new("1", (32, 32))  # Can be larger than matrix if wanted!!
+
+
+# def showReady():
+#     lp = 0
+#     # runs a simple animation with the buttons LEDS so you know it's ready.
+#     while lp < 5:
+#         for led in leds.values():
+#             GPIO.output(led, True)
+#             time.sleep(0.15)
+#             GPIO.output(led, False)
+#         lp += 1
+#     image = Image.open(imagePath + "logo.jpg")
+#     image.load()
+#     matrix.SetImage(image.im.id, 0, 1)
+#     time.sleep(2)
+#     matrix.Clear()
 
 
 def clearlights():
@@ -73,52 +103,52 @@ def clearlights():
         GPIO.output(led, False)
 
 
-def lookForButtons(buttonNum):
-    global pressed
-    input_state = GPIO.input(buttonNum)
-    if not input_state:
-        clearlights()
-        # print('press '+str(buttonNum))
-        if buttonNum != pressed:
-            # new button was pressed
-            GPIO.output(leds.get(buttonNum, ''), True)
-            pictures = {
-                18: 'danger.gif',
-                8: 'onair.gif',
-                24: 'filming.gif',
-                7: 'logo2.jpg'
-            }
-            time.sleep(0.2)
-            image = Image.open(imagePath + pictures.get(buttonNum, ''))
-            image.load()
-            matrix.SetImage(image.im.id, 0, 1)
-            pressed = buttonNum
+# def lookForButtons(buttonNum):
+#     global pressed
+#     input_state = GPIO.input(buttonNum)
+#     if not input_state:
+#         clearlights()
+#         # print('press '+str(buttonNum))
+#         if buttonNum != pressed:
+#             # new button was pressed
+#             GPIO.output(leds.get(buttonNum, ""), True)
+#             pictures = {
+#                 18: "danger.gif",
+#                 8: "onair.gif",
+#                 24: "filming.gif",
+#                 7: "logo2.jpg",
+#             }
+#             time.sleep(0.2)
+#             image = Image.open(imagePath + pictures.get(buttonNum, ""))
+#             image.load()
+#             matrix.SetImage(image.im.id, 0, 1)
+#             pressed = buttonNum
 
-        else:
-            # active button was re-pressed, turn it off and clear screen
-            matrix.Clear()
-            matrix.Fill(0x000000)
+#         else:
+#             # active button was re-pressed, turn it off and clear screen
+#             matrix.Clear()
+#             matrix.Fill(0x000000)
 
-            pressed = 0
+#             pressed = 0
 
-            time.sleep(.6)
-
-
-def lookForShutDown():
-    shutDownButton = GPIO.input(3)
-    if not shutDownButton:
-        showReady()
-        GPIO.cleanup()
-        os.system('shutdown now -h')
+#             time.sleep(0.6)
 
 
-# setup complete, start running stuff
-matrix.Clear()
-print('PiSign loaded.....  rock on    \m/')
-showReady()
+# def lookForShutDown():
+#     shutDownButton = GPIO.input(3)
+#     if not shutDownButton:
+#         showReady()
+#         GPIO.cleanup()
+#         os.system("shutdown now -h")
 
-while True:
-    for key in leds:
-        lookForButtons(key)
-    lookForShutDown()
-    time.sleep(.05)  # don't lock the cpu
+
+# # setup complete, start running stuff
+# matrix.Clear()
+# print("PiSign loaded.....  rock on    \m/")
+# showReady()
+
+# while True:
+#     for key in leds:
+#         lookForButtons(key)
+#     lookForShutDown()
+#     time.sleep(0.05)  # don't lock the cpu
